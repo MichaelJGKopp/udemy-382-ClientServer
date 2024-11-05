@@ -23,7 +23,7 @@ public class SimpleServer {
           if (echoString.equals("exit")) {
             break;
           }
-          output.println("Echo from server:" + echoString);
+          output.println("Echo from server: " + echoString);
         }
       }
     } catch (IOException e) {
