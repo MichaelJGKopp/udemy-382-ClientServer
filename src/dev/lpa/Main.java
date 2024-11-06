@@ -26,8 +26,11 @@ public class Main {
     doOperation("Compact: ", buffer, ByteBuffer::compact);
     doOperation("Append: ", buffer, b -> b.put(" This is a new test".getBytes()));
 //    doOperation("Flip (from Write to Read): ", buffer, ByteBuffer::flip);
-    doOperation("Read and Print Value: ",
+    doOperation("Slice, Read and Print Value: ",
       buffer.slice(0, buffer.position()), printBuffer);
+    doOperation("Append: ", buffer, b -> b.put(" *****".getBytes()));
+    doOperation("Slice, Read and Print Value: ",
+      buffer.slice(0, buffer.position()), printBuffer); // ideally use slice in consumer instead
   }
   
   private static void doOperation(String op, ByteBuffer buffer, Consumer<ByteBuffer> c) {
