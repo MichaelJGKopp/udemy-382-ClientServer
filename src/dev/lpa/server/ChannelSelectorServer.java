@@ -2,6 +2,7 @@ package dev.lpa.server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -14,14 +15,14 @@ public class ChannelSelectorServer {
   public static void main(String[] args) {
     
     try (ServerSocketChannel serverChannel = ServerSocketChannel.open()) {
-      serverChannel.socket().bind(new InetSocketAddress(5000));
+      serverChannel.bind(new InetSocketAddress(5000));
       serverChannel.configureBlocking(false);
       Selector selector = Selector.open();
       serverChannel.register(selector, SelectionKey.OP_ACCEPT);
       
       while (true) {
         
-        selector.select();  // blocking, overload with timeOut to stop blocking
+        selector.select();
         Set<SelectionKey> selectedKeys = selector.selectedKeys();
         Iterator<SelectionKey> iterator = selectedKeys.iterator();
         
@@ -32,12 +33,36 @@ public class ChannelSelectorServer {
           if (key.isAcceptable()) {
             SocketChannel clientChannel = serverChannel.accept();
             System.out.println("Client connected: " +
-                                clientChannel.getRemoteAddress());
+                                 clientChannel.getRemoteAddress());
+            clientChannel.configureBlocking(false);
+            clientChannel.register(selector, SelectionKey.OP_READ);
+          } else if (key.isReadable()) {
+            echoData(key);
           }
         }
       }
     } catch (IOException io) {
       System.out.println(io.getMessage());
+    }
+  }
+  
+  private static void echoData(SelectionKey key) throws IOException {
+    
+    SocketChannel clientChannel = (SocketChannel) key.channel();
+    ByteBuffer buffer = ByteBuffer.allocate(1024);
+    
+    int bytesRead = clientChannel.read(buffer);
+    if (bytesRead > 0) {
+      buffer.flip();
+      byte[] data = new byte[buffer.remaining()];
+      buffer.get(data);
+      String message = "Echo: " + new String(data);
+      clientChannel.write(ByteBuffer.wrap(message.getBytes()));
+    } else if (bytesRead == -1) {
+      System.out.println("Client disconnected: " +
+                           clientChannel.getRemoteAddress());
+      key.cancel();
+      clientChannel.close();
     }
   }
 }
